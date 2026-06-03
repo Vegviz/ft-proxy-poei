@@ -66,9 +66,24 @@ app.post('/tension', async (req, res) => {
   try {
     const { codeRome = 'H2909', codeDept = '69' } = req.body;
     const token = await getToken();
-    const url = `https://api.francetravail.io/partenaire/stats-offres-demandes-emploi/v1/indicateur/imt?codeRome=${codeRome}&codeDept=${codeDept}`;
-    const r = await fetch(url, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } });
-    const data = await r.json();
+
+    const urlV2 = `https://api.francetravail.io/partenaire/stats-offres-demandes-emploi/v2/indicateur/imt?codeRome=${codeRome}&codeDept=${codeDept}`;
+    let r = await fetch(urlV2, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } });
+
+    if (!r.ok || r.status === 204) {
+      const urlV1 = `https://api.francetravail.io/partenaire/stats-offres-demandes-emploi/v1/indicateur/imt?codeRome=${codeRome}&codeDept=${codeDept}`;
+      r = await fetch(urlV1, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } });
+    }
+
+    const text = await r.text();
+    if (!text || text.trim() === '') {
+      return res.json([{ libelleRome: codeRome, libelleDept: 'Dept ' + codeDept, info: 'Pas de données IMT disponibles.' }]);
+    }
+
+    let data;
+    try { data = JSON.parse(text); }
+    catch(e) { return res.json([{ libelleRome: codeRome, libelleDept: 'Dept ' + codeDept, info: 'Réponse : ' + text.substring(0,100) }]); }
+
     res.json(data);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
