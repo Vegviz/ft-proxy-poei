@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent POEI — France Travail</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F5F5F3;color:#1A1A18;min-height:100vh}
+.header{background:#fff;border-bottom:1px solid #E5E5E0;padding:16px 24px;display:flex;align-items:center;gap:12px}
+.header-title{font-size:18px;font-weight:600}
+.header-sub{font-size:13px;color:#666}
+.badge{display:inline-flex;align-items:center;gap:5px;background:#EAF3DE;color:#27500A;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500;margin-left:auto}
+.dot{width:7px;height:7px;border-radius:50%;background:#3B6D11}
+.main{max-width:960px;margin:24px auto;padding:0 16px}
+.tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid #E5E5E0}
+.tab{font-size:14px;font-weight:500;padding:10px 18px;cursor:pointer;color:#666;border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab:hover{color:#1A1A18}
+.tab.active{color:#185FA5;border-bottom-color:#185FA5}
+.panel{display:none}.panel.active{display:block}
+.card{background:#fff;border:1px solid #E5E5E0;border-radius:12px;padding:20px;margin-bottom:16px}
+.card-title{font-size:15px;font-weight:600;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:12px;color:#666;font-weight:500}
+.field select,.field input{padding:8px 10px;border:1px solid #D5D5D0;border-radius:8px;font-size:14px;background:#fff}
+.btn{background:#185FA5;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:#0C447C}
+.btn:disabled{background:#B5D4F4;cursor:not-allowed}
+.status{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px}
+.s-ok{background:#EAF3DE;color:#27500A}
+.s-err{background:#FEE2E2;color:#7F1D1D}
+.s-wait{background:#FEF3C7;color:#78350F}
+.s-idle{background:#F5F5F3;color:#666}
+.sdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dok{background:#3B6D11}.derr{background:#DC2626}.dwait{background:#D97706}.didle{background:#999}
+.spinner{width:13px;height:13px;border:2px solid #FCD34D;border-top-color:#D97706;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.metric{background:#F5F5F3;border-radius:8px;padding:12px}
+.metric-label{font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+.metric-val{font-size:24px;font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.04em;padding:8px;border-bottom:1px solid #E5E5E0}
+td{padding:9px 8px;border-bottom:1px solid #F0F0EE;vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#FAFAF8}
+.tag{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500}
+.tag-cdi{background:#DCFCE7;color:#14532D}
+.tag-cdd{background:#DBEAFE;color:#1E3A8A}
+.tag-mis{background:#F3E8FF;color:#581C87}
+.tag-gray{background:#F1F0EE;color:#555}
+.tag-green{background:#DCFCE7;color:#14532D}
+.tag-blue{background:#DBEAFE;color:#1E3A8A}
+.tag-amber{background:#FEF3C7;color:#78350F}
+.tag-red{background:#FEE2E2;color:#7F1D1D}
+.empty{text-align:center;padding:40px;color:#999;font-size:14px}
+.overflow{overflow-x:auto}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">🎯 Agent POEI — Bassin d'emploi</div>
+    <div class="header-sub">Connecté à France Travail en temps réel</div>
+  </div>
+  <div class="badge"><div class="dot"></div> Proxy actif</div>
+</div>
+
+<div class="main">
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('offres',this)">📋 Offres ROME</button>
+    <button class="tab" onclick="switchTab('entreprises',this)">🏭 Entreprises</button>
+    <button class="tab" onclick="switchTab('tension',this)">📊 Tension bassin</button>
+  </div>
+
+  <!-- OFFRES -->
+  <div id="tab-offres" class="panel active">
+    <div class="card">
+      <div class="card-title">Recherche d'offres actives</div>
+      <div class="grid">
+        <div class="field"><label>Code ROME</label>
+          <select id="rome">
+            <option value="H2909">H2909 — Soudeur</option>
+            <option value="H3203">H3203 — Opérateur CN</option>
+            <option value="F1703">F1703 — Maçon</option>
+            <option value="F1101">F1101 — Conducteur d'engins</option>
+            <option value="I1304">I1304 — Maintenance industrielle</option>
+            <option value="H2604">H2604 — Électromécanicien</option>
+          </select>
+        </div>
+        <div class="field"><label>Commune (code INSEE)</label>
+          <input type="text" id="commune" value="69189" placeholder="ex: 69189 — Tarare" />
+        </div>
+        <div class="field"><label>Rayon (km)</label>
+          <select id="rayon"><option>20</option><option selected>30</option><option>45</option></select>
+        </div>
+        <div class="field"><label>Nb résultats</label>
+          <select id="nbres"><option>10</option><option selected>25</option><option>50</option></select>
+        </div>
+      </div>
+      <button class="btn" id="btn-offres" onclick="searchOffres()">🔍 Lancer la recherche</button>
+    </div>
+    <div id="offres-status" class="status s-idle" style="display:none"></div>
+    <div id="offres-metrics" class="metrics" style="display:none">
+      <div class="metric"><div class="metric-label">Offres trouvées</div><div class="metric-val" id="m-count">—</div></div>
+      <div class="metric"><div class="metric-label">Entreprises distinctes</div><div class="metric-val" id="m-ent">—</div></div>
+      <div class="metric"><div class="metric-label">CDI / CDD</div><div class="metric-val" id="m-cdi">—</div></div>
+    </div>
+    <div id="offres-results"></div>
+  </div>
+
+  <!-- ENTREPRISES -->
+  <div id="tab-entreprises" class="panel">
+    <div class="card">
+      <div class="card-title">Entreprises qui recrutent</div>
+      <div class="grid">
+        <div class="field"><label>Secteur NAF</label>
+          <select id="naf">
+            <option value="25">25 — Produits métalliques</option>
+            <option value="28">28 — Machines & équipements</option>
+            <option value="41">41 — Construction bâtiments</option>
+            <option value="42">42 — Génie civil</option>
+            <option value="43">43 — Travaux spécialisés</option>
+            <option value="22">22 — Caoutchouc / Plastique</option>
+          </select>
+        </div>
+        <div class="field"><label>Département</label>
+          <input type="text" id="dept" value="69" maxlength="3" />
+        </div>
+        <div class="field"><label>Nb résultats</label>
+          <select id="nbent"><option>10</option><option selected>20</option><option>50</option></select>
+        </div>
+      </div>
+      <button class="btn" id="btn-ent" onclick="searchEntreprises()">🔍 Rechercher</button>
+    </div>
+    <div id="ent-status" class="status s-idle" style="display:none"></div>
+    <div id="ent-results"></div>
+  </div>
+
+  <!-- TENSION -->
+  <div id="tab-tension" class="panel">
+    <div class="card">
+      <div class="card-title">Indicateurs de tension IMT</div>
+      <div class="grid">
+        <div class="field"><label>Code ROME</label>
+          <select id="rome-t">
+            <option value="H2909">H2909 — Soudeur</option>
+            <option value="H3203">H3203 — Opérateur CN</option>
+            <option value="F1703">F1703 — Maçon</option>
+            <option value="F1101">F1101 — Conducteur d'engins</option>
+            <option value="I1304">I1304 — Maintenance industrielle</option>
+          </select>
+        </div>
+        <div class="field"><label>Département</label>
+          <input type="text" id="dept-t" value="69" maxlength="3" />
+        </div>
+      </div>
+      <button class="btn" id="btn-tension" onclick="searchTension()">📊 Analyser</button>
+    </div>
+    <div id="tension-status" class="status s-idle" style="display:none"></div>
+    <div id="tension-results"></div>
+  </div>
+</div>
+
+<script>
+const PROXY = '';
+
+function switchTab(id, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  el.classList.add('active');
+}
+
+function setStatus(id, type, msg) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.display = 'flex';
+  el.className = 'status s-' + type;
+  const dc = {ok:'dok',err:'derr',wait:'dwait',idle:'didle'}[type];
+  el.innerHTML = `<div class="sdot ${dc}"></div>${type==='wait'?'<div class="spinner"></div>':''} ${msg}`;
+}
+
+async function searchOffres() {
+  const rome = document.getElementById('rome').value;
+  const commune = document.getElementById('commune').value.trim();
+  const distance = document.getElementById('rayon').value;
+  const nbResultats = document.getElementById('nbres').value;
+  setStatus('offres-status','wait','Interrogation France Travail...');
+  document.getElementById('btn-offres').disabled = true;
+  document.getElementById('offres-metrics').style.display = 'none';
+  document.getElementById('offres-results').innerHTML = '';
+  try {
+    const r = await fetch(PROXY + '/offres', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({codeROME:rome, commune, distance, nbResultats})
+    });
+    const data = await r.json();
+    if (data.error) throw new Error(data.error);
+    const offres = data.resultats || [];
+    const ents = new Set(offres.map(o=>o.entreprise?.nom).filter(Boolean));
+    const cdis = offres.filter(o=>['CDI','CDD'].includes(o.typeContrat)).length;
+    setStatus('offres-status','ok', offres.length + ' offre(s) — ROME ' + rome + ' · ' + distance + ' km de ' + commune);
+    document.getElementById('offres-metrics').style.display = 'grid';
+    document.getElementById('m-count').textContent = offres.length;
+    document.getElementById('m-ent').textContent = ents.size;
+    document.getElementById('m-cdi').textContent = cdis;
+    if (!offres.length) { document.getElementById('offres-results').innerHTML = '<div class="empty">Aucune offre pour ces critères.</div>'; return; }
+    const rows = offres.slice(0,25).map(o => {
+      const ct = o.typeContrat||'—';
+      const tc = ct==='CDI'?'tag-cdi':ct==='CDD'?'tag-cdd':ct==='MIS'?'tag-mis':'tag-gray';
+      return `<tr><td>${o.intitule||'—'}</td><td>${o.entreprise?.nom||'—'}</td><td>${o.lieuTravail?.libelle||'—'}</td><td><span class="tag ${tc}">${ct}</span></td><td>${(o.dateCreation||'').substring(0,10)}</td></tr>`;
+    }).join('');
+    document.getElementById('offres-results').innerHTML = `<div class="card overflow"><table><thead><tr><th>Intitulé</th><th>Entreprise</th><th>Lieu</th><th>Contrat</th><th>Date</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  } catch(e) { setStatus('offres-status','err','Erreur : ' + e.message); }
+  document.getElementById('btn-offres').disabled = false;
+}
+
+async function searchEntreprises() {
+  const secteurActivite = document.getElementById('naf').value;
+  const departement = document.getElementById('dept').value.trim();
+  const nbResultats = document.getElementById('nbent').value;
+  setStatus('ent-status','wait','Recherche entreprises...');
+  document.getElementById('btn-ent').disabled = true;
+  document.getElementById('ent-results').innerHTML = '';
+  try {
+    const r = await fetch(PROXY + '/entreprises', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({secteurActivite, departement, nbResultats})
+    });
+    const data = await r.json();
+    if (data.error) throw new Error(data.error);
+    const offres = data.resultats || [];
+    const entMap = {};
+    offres.forEach(o => {
+      const nom = o.entreprise?.nom; if (!nom) return;
+      if (!entMap[nom]) entMap[nom] = {nom, siret:o.entreprise?.siret||'—', lieu:o.lieuTravail?.libelle||'—', metiers:new Set(), nb:0};
+      entMap[nom].metiers.add(o.appellationlibelle||o.intitule||'');
+      entMap[nom].nb++;
+    });
+    const ents = Object.values(entMap).sort((a,b)=>b.nb-a.nb);
+    setStatus('ent-status','ok', ents.length + ' entreprise(s) — NAF ' + secteurActivite + ' · Dept ' + departement);
+    if (!ents.length) { document.getElementById('ent-results').innerHTML = '<div class="empty">Aucune entreprise trouvée.</div>'; return; }
+    const rows = ents.slice(0,20).map((e,i) => {
+      const badge = i<3?'<span class="tag tag-green">Top '+(i+1)+'</span>':i<6?'<span class="tag tag-blue">Prio 2</span>':'<span class="tag tag-gray">Suivi</span>';
+      return `<tr><td>${e.nom}</td><td style="font-size:12px;color:#888">${e.siret}</td><td>${e.lieu}</td><td>${[...e.metiers].slice(0,1).join('')||'—'}</td><td>${badge}</td></tr>`;
+    }).join('');
+    document.getElementById('ent-results').innerHTML = `<div class="card overflow"><table><thead><tr><th>Entreprise</th><th>SIRET</th><th>Lieu</th><th>Métier</th><th>Priorité</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  } catch(e) { setStatus('ent-status','err','Erreur : ' + e.message); }
+  document.getElementById('btn-ent').disabled = false;
+}
+
+async function searchTension() {
+  const codeRome = document.getElementById('rome-t').value;
+  const codeDept = document.getElementById('dept-t').value.trim();
+  setStatus('tension-status','wait','Récupération indicateurs IMT...');
+  document.getElementById('btn-tension').disabled = true;
+  document.getElementById('tension-results').innerHTML = '';
+  try {
+    const r = await fetch(PROXY + '/tension', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({codeRome, codeDept})
+    });
+    const data = await r.json();
+    if (data.error) throw new Error(data.error);
+    setStatus('tension-status','ok','Indicateurs IMT — ROME ' + codeRome + ' · Dept ' + codeDept);
+    const arr = Array.isArray(data) ? data : [data];
+    if (!arr.length || !arr[0]) { document.getElementById('tension-results').innerHTML = '<div class="empty">Pas de données IMT pour ces critères.</div>'; return; }
+    const rows = arr.slice(0,8).map(d => {
+      const t = parseFloat(d.tauxTension||d.indicateurTension||0);
+      const tc = isNaN(t)?'tag-gray':t>1?'tag-red':t>0.5?'tag-amber':'tag-green';
+      return `<tr><td>${d.libelleRome||codeRome}</td><td>${d.libelleDept||codeDept}</td><td><span class="tag ${tc}">${isNaN(t)?'—':t.toFixed(2)}</span></td><td>${d.nbOffres||d.nombreOffres||'—'}</td><td>${d.nbDemandeurs||d.nombreDemandeurs||'—'}</td></tr>`;
+    }).join('');
+    document.getElementById('tension-results').innerHTML = `<div class="card overflow"><table><thead><tr><th>Métier</th><th>Zone</th><th>Taux tension</th><th>Offres</th><th>Demandeurs</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  } catch(e) { setStatus('tension-status','err','Erreur : ' + e.message); }
+  document.getElementById('btn-tension').disabled = false;
+}
+</script>
+</body>
+</html>
