@@ -20,7 +20,7 @@ async function getToken() {
     grant_type:    'client_credentials',
     client_id:     process.env.FT_CLIENT_ID,
     client_secret: process.env.FT_CLIENT_SECRET,
-    scope:         'api_offresdemploiv2 api_romev1 o2dsoffre'
+    scope:         'api_offresdemploiv2 o2dsoffre'
   });
   const r = await fetch(url, {
     method:  'POST',
